@@ -1,0 +1,277 @@
+// schema.prisma - Classified ads site with Phone OTP + Admin Password system
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Tier {
+  BRONZE
+  SILVER
+  GOLD
+  PLATINUM
+  TITANIUM
+}
+
+enum AdStatus {
+  PENDING_REVIEW // created by user, NOT public yet
+  ACTIVE         // approved by admin
+  REJECTED
+  PAUSED
+  EXPIRED
+  REMOVED
+}
+
+enum Role {
+  USER
+  PROVIDER
+  MODERATOR
+  ADMIN
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+enum ReportReason {
+  FAKE_PROFILE
+  FAKE_PHOTOS
+  UNDERAGE_SUSPECTED
+  SCAM
+  MISLEADING
+  OTHER
+}
+
+model User {
+  id              String         @id @default(cuid())
+
+  // Common for all users
+  phone           String         @unique
+  name            String?
+  role            Role           @default(USER)
+
+  // Only for Admin
+  email           String?        @unique
+  username        String?        @unique
+  passwordHash    String?        // Only Admin has password
+
+  isVerified      Boolean        @default(false)
+  isAdult         Boolean        @default(false)
+  dateOfBirth     DateTime?
+  isBanned        Boolean        @default(false)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  ads             Ad[]
+  payments        Payment[]
+  reports         Report[]       @relation("ReportedBy")
+  verifications   Verification[]
+  comments        Comment[]
+}
+
+model Otp {
+  id        String   @id @default(cuid())
+  phone     String
+  code      String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@unique([phone])
+  @@index([phone])
+}
+
+model Category {
+  id          String     @id @default(cuid())
+  name        String     @unique
+  slug        String     @unique
+  description String?
+  isAdult     Boolean    @default(false)
+  sortOrder   Int        @default(0)
+  isActive    Boolean    @default(true)
+
+  postTypes   PostType[]
+  ads         Ad[]
+}
+
+model PostType {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String
+  categoryId  String
+  category    Category @relation(fields: [categoryId], references: [id])
+  formSchema  Json?
+  ads         Ad[]
+
+  @@unique([categoryId, slug])
+}
+
+model TierPlan {
+  id              String    @id @default(cuid())
+  tier            Tier      @unique
+  rank            Int       @unique
+  name            String
+  priceLkr        Int       @default(0)
+  durationHours   Int       @default(24)
+
+  maxPhotos       Int       @default(3)
+  minPhotos       Int       @default(1)
+  maxVideos       Int       @default(0)
+  allowVideo      Boolean   @default(false)
+  maxVideoSizeMB  Int       @default(50)
+
+  showOnHome      Boolean   @default(true)
+  badgeColor      String?
+  isActive        Boolean   @default(true)
+
+  payments        Payment[]
+}
+
+model Ad {
+  id              String     @id @default(cuid())
+  adNumber        Int        @unique @default(autoincrement())
+  title           String
+  description     String
+  priceLkr        Int?
+  phone           String?
+  whatsapp        String?
+  city            String
+  district        String?
+  ageShown        Int?
+  status          AdStatus   @default(PENDING_REVIEW)
+
+  requestedTier   Tier       @default(BRONZE)
+  approvedAt      DateTime?
+  approvedById    String?
+  rejectReason    String?
+  adminNote       String?
+
+  isFlaggedFake   Boolean    @default(false)
+  removedAt       DateTime?
+  removedById     String?
+  removeReason    String?
+
+  tier            Tier       @default(BRONZE)
+  tierRank        Int        @default(1)
+  tierStartedAt   DateTime?
+  tierExpiresAt   DateTime?
+  bumpedAt        DateTime   @default(now())
+
+  views           Int        @default(0)
+  clicks          Int        @default(0)
+  likeCount       Int        @default(0)
+  shareCount      Int        @default(0)
+  isVerifiedBadge Boolean    @default(false)
+
+  userId          String
+  user            User       @relation(fields: [userId], references: [id])
+  categoryId      String
+  category        Category   @relation(fields: [categoryId], references: [id])
+  postTypeId      String?
+  postType        PostType?  @relation(fields: [postTypeId], references: [id])
+
+  images          AdImage[]
+  payments        Payment[]
+  reports         Report[]
+  comments        Comment[]
+
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  @@index([status, tierRank(sort: Desc), bumpedAt(sort: Desc)])
+  @@index([categoryId, status, tierRank(sort: Desc), bumpedAt(sort: Desc)])
+  @@index([tierExpiresAt])
+  @@index([city])
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  content   String
+  userId    String
+  adId      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ad        Ad       @relation(fields: [adId], references: [id], onDelete: Cascade)
+}
+
+model AdImage {
+  id        String   @id @default(cuid())
+  url       String
+  type      String   @default("image")
+  isCover   Boolean  @default(false)
+  sortOrder Int      @default(0)
+  adId      String
+  ad        Ad       @relation(fields: [adId], references: [id], onDelete: Cascade)
+}
+
+model Payment {
+  id           String        @id @default(cuid())
+  amountLkr    Int
+  status       PaymentStatus @default(PENDING)
+  method       String?
+  reference    String?       @unique
+  slipUrl      String?
+  slipSeenAt   DateTime?
+  verifiedById String?
+  verifiedAt   DateTime?
+  adminNote    String?
+  createdAt    DateTime      @default(now())
+
+  userId       String
+  user         User          @relation(fields: [userId], references: [id])
+  adId         String
+  ad           Ad            @relation(fields: [adId], references: [id])
+  planId       String
+  plan         TierPlan      @relation(fields: [planId], references: [id])
+}
+
+model Verification {
+  id         String    @id @default(cuid())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id])
+  idDocUrl   String
+  selfieUrl  String?
+  approved   Boolean   @default(false)
+  reviewedBy String?
+  reviewedAt DateTime?
+  createdAt  DateTime  @default(now())
+}
+
+model Report {
+  id         String       @id @default(cuid())
+  reason     ReportReason
+  details    String?
+  resolved   Boolean      @default(false)
+  createdAt  DateTime     @default(now())
+
+  adId       String
+  ad         Ad           @relation(fields: [adId], references: [id], onDelete: Cascade)
+  reporterId String?
+  reporter   User?        @relation("ReportedBy", fields: [reporterId], references: [id])
+}
+
+model AuditLog {
+  id           String   @id @default(cuid())
+  action       String
+  adId         String?
+  adNumber     Int?
+  targetUserId String?
+  adminId      String
+  reason       String?
+  createdAt    DateTime @default(now())
+
+  @@index([adId])
+  @@index([adminId])
+}
+
+model SiteSetting {
+  key   String @id
+  value String
+}
