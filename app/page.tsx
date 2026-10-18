@@ -29,8 +29,6 @@ import {
 } from "lucide-react";
 
 /* ----------------------------- Tier config ----------------------------- */
-// Matches schema.prisma: Tier enum + tierRank (Titanium first on the home page)
-
 type Tier = "TITANIUM" | "PLATINUM" | "GOLD" | "SILVER" | "BRONZE";
 
 const TIERS: Record<Tier, { rank: number; label: string; badge: string; card: string }> = {
@@ -69,7 +67,7 @@ type Ad = {
   likes: number;
   views: number;
   minutesAgo: number;
-  hoursLeft: number | null; // paid tier time left (24h boost)
+  hoursLeft: number | null;
   whatsapp: string;
   image: string;
 };
@@ -123,7 +121,9 @@ export default function HomePage() {
   const toggleFav = (id: number) =>
     setFavs((prev) => {
       const next = prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id];
-      try { localStorage.setItem("favs", JSON.stringify(next)); } catch {}
+      try {
+        localStorage.setItem("favs", JSON.stringify(next));
+      } catch {}
       return next;
     });
 
@@ -141,14 +141,17 @@ export default function HomePage() {
       if (sort === "newest") return a.minutesAgo - b.minutesAgo;
       if (sort === "views") return b.views - a.views;
       if (sort === "price") return (a.priceLkr ?? Infinity) - (b.priceLkr ?? Infinity);
-      // Titanium -> Platinum -> Gold -> Silver -> Bronze, newest bump first inside a tier
       return TIERS[b.tier].rank - TIERS[a.tier].rank || a.minutesAgo - b.minutesAgo;
     });
   }, [search, category, city, verifiedOnly, maxPrice, sort]);
 
   const activeFilters = (city !== "All cities" ? 1 : 0) + (verifiedOnly ? 1 : 0) + (maxPrice !== "" ? 1 : 0);
   const clearAll = () => {
-    setSearch(""); setCategory("all"); setCity("All cities"); setVerifiedOnly(false); setMaxPrice("");
+    setSearch("");
+    setCategory("all");
+    setCity("All cities");
+    setVerifiedOnly(false);
+    setMaxPrice("");
   };
   const countFor = (slug: string) => (slug === "all" ? ADS.length : ADS.filter((a) => a.category === slug).length);
 
@@ -158,7 +161,9 @@ export default function HomePage() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="max-w-md w-full bg-white rounded-2xl border shadow-sm p-8 text-center">
-          <div className="mx-auto mb-4 h-14 w-14 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center text-xl font-bold">18+</div>
+          <div className="mx-auto mb-4 h-14 w-14 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center text-xl font-bold">
+            18+
+          </div>
           <h1 className="text-2xl font-bold mb-2">Adults only</h1>
           <p className="text-sm text-gray-500 mb-6">
             This website contains adult content. You must be 18 or older, and it must be legal to view it where you live.
@@ -166,11 +171,20 @@ export default function HomePage() {
           <div className="flex gap-3">
             <Button
               className="flex-1 bg-rose-600 hover:bg-rose-700 h-11"
-              onClick={() => { try { localStorage.setItem("age_ok", "1"); } catch {} setAgeOk(true); }}
+              onClick={() => {
+                try {
+                  localStorage.setItem("age_ok", "1");
+                } catch {}
+                setAgeOk(true);
+              }}
             >
               I am 18 or older
             </Button>
-            <Button variant="outline" className="flex-1 h-11" onClick={() => (window.location.href = "https://www.google.com")}>
+            <Button
+              variant="outline"
+              className="flex-1 h-11"
+              onClick={() => (window.location.href = "https://www.google.com")}
+            >
               Leave
             </Button>
           </div>
@@ -186,7 +200,9 @@ export default function HomePage() {
       <header className="bg-white border-b sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
           <Link href="/" className="flex items-center gap-2 font-bold text-xl text-rose-600 shrink-0">
-            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-rose-500 to-pink-600 flex items-center justify-center text-white text-sm">B</div>
+            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-rose-500 to-pink-600 flex items-center justify-center text-white text-sm">
+              B
+            </div>
             Bandu
           </Link>
 
@@ -200,21 +216,38 @@ export default function HomePage() {
                 className="pl-10 h-11 bg-gray-50 border-gray-200 focus-visible:ring-rose-500"
               />
               {search && (
-                <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600" aria-label="Clear search">
+                <button
+                  onClick={() => setSearch("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  aria-label="Clear search"
+                >
                   <X className="h-4 w-4" />
                 </button>
               )}
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <span className="hidden sm:flex items-center gap-1 text-sm text-gray-500 mr-1">
+          <div className="flex items-center gap-3">
+            <span className="hidden sm:flex items-center gap-1 text-sm text-gray-500">
               <Heart className="h-4 w-4" /> {favs.length}
             </span>
-            <Button asChild variant="ghost" size="sm"><Link href="/login">Login</Link></Button>
-            <Button asChild className="bg-rose-600 hover:bg-rose-700 text-white gap-1.5">
-              <Link href="/dashboard/new-ad"><Plus className="h-4 w-4" />Post Ad</Link>
-            </Button>
+
+            {/* Login - No asChild */}
+            <Link
+              href="/login"
+              className="text-sm font-medium text-gray-600 hover:text-rose-600 transition-colors px-3 py-2"
+            >
+              Login
+            </Link>
+
+            {/* Post Ad - No asChild */}
+            <Link
+              href="/dashboard/new-ad"
+              className="inline-flex items-center gap-1.5 h-9 px-4 rounded-full bg-rose-600 hover:bg-rose-700 text-white text-sm font-semibold shadow-sm transition-all"
+            >
+              <Plus className="h-4 w-4" />
+              Post Ad
+            </Link>
           </div>
         </div>
 
@@ -222,23 +255,38 @@ export default function HomePage() {
         <div className="md:hidden px-4 pb-3">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search..." className="pl-10 h-10 bg-gray-50" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search..."
+              className="pl-10 h-10 bg-gray-50"
+            />
           </div>
         </div>
       </header>
 
-      {/* Category bar (working filter) */}
+      {/* Category bar */}
       <div className="bg-white border-b">
         <div className="max-w-7xl mx-auto px-4 py-3">
           <div className="flex gap-3 overflow-x-auto pb-1 [scrollbar-width:none]">
             {categories.map(({ name, slug, Icon }) => {
               const active = category === slug;
               return (
-                <button key={slug} onClick={() => setCategory(slug)} className="flex flex-col items-center gap-1 min-w-[84px] group">
-                  <div className={`h-12 w-12 rounded-full flex items-center justify-center transition-colors ${active ? "bg-rose-600 text-white" : "bg-rose-50 text-rose-600 group-hover:bg-rose-100"}`}>
+                <button
+                  key={slug}
+                  onClick={() => setCategory(slug)}
+                  className="flex flex-col items-center gap-1 min-w-[84px] group"
+                >
+                  <div
+                    className={`h-12 w-12 rounded-full flex items-center justify-center transition-colors ${
+                      active ? "bg-rose-600 text-white" : "bg-rose-50 text-rose-600 group-hover:bg-rose-100"
+                    }`}
+                  >
                     <Icon className="h-5 w-5" />
                   </div>
-                  <span className={`text-xs font-medium text-center ${active ? "text-rose-600" : "text-gray-700"}`}>{name}</span>
+                  <span className={`text-xs font-medium text-center ${active ? "text-rose-600" : "text-gray-700"}`}>
+                    {name}
+                  </span>
                   <span className="text-[10px] text-gray-400">{countFor(slug)}</span>
                 </button>
               );
@@ -256,21 +304,33 @@ export default function HomePage() {
               Titanium and Platinum ads appear first. Every ad is reviewed by our team before it goes live.
             </p>
           </div>
-          <Button asChild size="lg" className="bg-white text-rose-600 hover:bg-rose-50 font-semibold shrink-0">
-            <Link href="/packages">View Packages</Link>
-          </Button>
+          <Link
+            href="/packages"
+            className="inline-flex items-center justify-center h-11 px-6 rounded-md bg-white text-rose-600 hover:bg-rose-50 font-semibold shrink-0 transition-colors"
+          >
+            View Packages
+          </Link>
         </div>
 
         {/* Title + filter bar */}
         <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
           <div>
-            <h1 className="text-xl font-bold flex items-center gap-2"><Crown className="h-5 w-5 text-amber-500" />Latest Ads</h1>
-            <p className="text-sm text-gray-500">Showing {Math.min(visible, results.length)} of {results.length} results</p>
+            <h1 className="text-xl font-bold flex items-center gap-2">
+              <Crown className="h-5 w-5 text-amber-500" />
+              Latest Ads
+            </h1>
+            <p className="text-sm text-gray-500">
+              Showing {Math.min(visible, results.length)} of {results.length} results
+            </p>
           </div>
           <Button variant="outline" size="sm" className="gap-2" onClick={() => setShowFilters((v) => !v)}>
             <Filter className="h-4 w-4" />
             Filters
-            {activeFilters > 0 && <span className="h-5 min-w-5 rounded-full bg-rose-600 text-white text-[11px] flex items-center justify-center px-1">{activeFilters}</span>}
+            {activeFilters > 0 && (
+              <span className="h-5 min-w-5 rounded-full bg-rose-600 text-white text-[11px] flex items-center justify-center px-1">
+                {activeFilters}
+              </span>
+            )}
           </Button>
         </div>
 
@@ -278,8 +338,14 @@ export default function HomePage() {
           <div className="bg-white border rounded-xl p-4 mb-6 grid sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
             <label className="text-sm">
               <span className="block mb-1 text-gray-600">City</span>
-              <select value={city} onChange={(e) => setCity(e.target.value)} className="w-full h-10 rounded-md border border-gray-200 px-2 bg-white">
-                {cities.map((c) => <option key={c}>{c}</option>)}
+              <select
+                value={city}
+                onChange={(e) => setCity(e.target.value)}
+                className="w-full h-10 rounded-md border border-gray-200 px-2 bg-white"
+              >
+                {cities.map((c) => (
+                  <option key={c}>{c}</option>
+                ))}
               </select>
             </label>
             <label className="text-sm">
@@ -295,7 +361,11 @@ export default function HomePage() {
             </label>
             <label className="text-sm">
               <span className="block mb-1 text-gray-600">Sort by</span>
-              <select value={sort} onChange={(e) => setSort(e.target.value as typeof sort)} className="w-full h-10 rounded-md border border-gray-200 px-2 bg-white">
+              <select
+                value={sort}
+                onChange={(e) => setSort(e.target.value as typeof sort)}
+                className="w-full h-10 rounded-md border border-gray-200 px-2 bg-white"
+              >
                 <option value="tier">Best match (tier first)</option>
                 <option value="newest">Newest</option>
                 <option value="views">Most viewed</option>
@@ -304,10 +374,17 @@ export default function HomePage() {
             </label>
             <div className="flex items-center justify-between gap-3">
               <label className="flex items-center gap-2 text-sm cursor-pointer">
-                <input type="checkbox" checked={verifiedOnly} onChange={(e) => setVerifiedOnly(e.target.checked)} className="accent-rose-600 h-4 w-4" />
+                <input
+                  type="checkbox"
+                  checked={verifiedOnly}
+                  onChange={(e) => setVerifiedOnly(e.target.checked)}
+                  className="accent-rose-600 h-4 w-4"
+                />
                 Verified only
               </label>
-              <Button variant="ghost" size="sm" className="text-rose-600" onClick={clearAll}>Clear all</Button>
+              <Button variant="ghost" size="sm" className="text-rose-600" onClick={clearAll}>
+                Clear all
+              </Button>
             </div>
           </div>
         )}
@@ -316,7 +393,9 @@ export default function HomePage() {
         {results.length === 0 ? (
           <div className="bg-white border border-dashed rounded-2xl py-16 text-center">
             <p className="text-gray-500 mb-4">No ads match your search.</p>
-            <Button variant="outline" onClick={clearAll}>Clear filters</Button>
+            <Button variant="outline" onClick={clearAll}>
+              Clear filters
+            </Button>
           </div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
@@ -340,10 +419,17 @@ export default function HomePage() {
             <ShieldCheck className="h-8 w-8 text-green-600 shrink-0" />
             <div>
               <p className="font-semibold">Spotted a fake or suspicious ad?</p>
-              <p className="text-sm text-gray-500">Tap the flag on any ad. Our admins review reports and remove fake ads.</p>
+              <p className="text-sm text-gray-500">
+                Tap the flag on any ad. Our admins review reports and remove fake ads.
+              </p>
             </div>
           </div>
-          <Button asChild variant="outline"><Link href="/safety">Safety tips</Link></Button>
+          <Link
+            href="/safety"
+            className="inline-flex items-center justify-center h-10 px-4 rounded-md border border-gray-200 text-sm font-medium hover:bg-gray-50 transition-colors"
+          >
+            Safety tips
+          </Link>
         </div>
       </main>
 
@@ -351,15 +437,27 @@ export default function HomePage() {
       <footer className="bg-white border-t mt-12">
         <div className="max-w-7xl mx-auto px-4 py-8 flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-gray-500">
           <div className="flex items-center gap-2">
-            <div className="h-6 w-6 rounded bg-rose-600 text-white flex items-center justify-center text-xs font-bold">B</div>
+            <div className="h-6 w-6 rounded bg-rose-600 text-white flex items-center justify-center text-xs font-bold">
+              B
+            </div>
             <span>© {new Date().getFullYear()} Bandu. All rights reserved.</span>
           </div>
           <div className="flex flex-wrap justify-center gap-6">
-            <Link href="/packages" className="hover:text-rose-600">Packages</Link>
-            <Link href="/safety" className="hover:text-rose-600">Safety</Link>
-            <Link href="/help" className="hover:text-rose-600">Help</Link>
-            <Link href="/terms" className="hover:text-rose-600">Terms</Link>
-            <Link href="/privacy" className="hover:text-rose-600">Privacy</Link>
+            <Link href="/packages" className="hover:text-rose-600">
+              Packages
+            </Link>
+            <Link href="/safety" className="hover:text-rose-600">
+              Safety
+            </Link>
+            <Link href="/help" className="hover:text-rose-600">
+              Help
+            </Link>
+            <Link href="/terms" className="hover:text-rose-600">
+              Terms
+            </Link>
+            <Link href="/privacy" className="hover:text-rose-600">
+              Privacy
+            </Link>
           </div>
         </div>
       </footer>
@@ -414,7 +512,9 @@ function AdCard({ ad, isFav, onFav }: { ad: Ad; isFav: boolean; onFav: () => voi
 
       <div className="p-3">
         <Link href={`/ads/${ad.adNumber}`}>
-          <h3 className="font-medium text-sm line-clamp-2 group-hover:text-rose-600 transition-colors mb-1">{ad.title}</h3>
+          <h3 className="font-medium text-sm line-clamp-2 group-hover:text-rose-600 transition-colors mb-1">
+            {ad.title}
+          </h3>
         </Link>
 
         <div className="flex items-center gap-1 text-xs text-gray-500 mb-2">
@@ -429,8 +529,12 @@ function AdCard({ ad, isFav, onFav }: { ad: Ad; isFav: boolean; onFav: () => voi
             {ad.priceLkr ? `Rs. ${ad.priceLkr.toLocaleString()}` : "Contact"}
           </span>
           <span className="flex items-center gap-2 text-[11px] text-gray-400">
-            <span className="flex items-center gap-0.5"><Heart className="h-3 w-3" /> {ad.likes}</span>
-            <span className="flex items-center gap-0.5"><Eye className="h-3 w-3" /> {fmtViews(ad.views)}</span>
+            <span className="flex items-center gap-0.5">
+              <Heart className="h-3 w-3" /> {ad.likes}
+            </span>
+            <span className="flex items-center gap-0.5">
+              <Eye className="h-3 w-3" /> {fmtViews(ad.views)}
+            </span>
           </span>
         </div>
 
